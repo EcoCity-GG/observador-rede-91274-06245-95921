@@ -1,0 +1,250 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Shield, Loader2 } from "lucide-react";
+import { authService } from "@/services/authService";
+import { useToast } from "@/hooks/use-toast";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [loginData, setLoginData] = useState({
+    username: "",
+    password: "",
+  });
+
+  const [registerData, setRegisterData] = useState({
+    full_name: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await authService.login(loginData);
+      toast({
+        title: "Login realizado!",
+        description: "Bem-vindo de volta ao sistema.",
+      });
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao fazer login",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (registerData.password !== registerData.confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await authService.register({
+        full_name: registerData.full_name,
+        username: registerData.username,
+        email: registerData.email,
+        password: registerData.password,
+      });
+      
+      toast({
+        title: "Conta criada!",
+        description: "Sua conta foi criada com sucesso.",
+      });
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar conta",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-6">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
+
+      <Card className="w-full max-w-md border-border shadow-2xl">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl">
+            {isLogin ? "Login" : "Criar Conta"}
+          </CardTitle>
+          <CardDescription>
+            {isLogin 
+              ? "Entre com suas credenciais para acessar o sistema" 
+              : "Preencha os dados para criar sua conta"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLogin ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Usuário ou Email</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="seu.usuario"
+                  value={loginData.username}
+                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Nome Completo</Label>
+                <Input
+                  id="full_name"
+                  type="text"
+                  placeholder="Seu Nome Completo"
+                  value={registerData.full_name}
+                  onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg_username">Usuário</Label>
+                <Input
+                  id="reg_username"
+                  type="text"
+                  placeholder="seu.usuario"
+                  value={registerData.username}
+                  onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={registerData.email}
+                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg_password">Senha</Label>
+                <Input
+                  id="reg_password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm_password">Confirmar Senha</Label>
+                <Input
+                  id="confirm_password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={registerData.confirmPassword}
+                  onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Criando conta...
+                  </>
+                ) : (
+                  "Criar Conta"
+                )}
+              </Button>
+            </form>
+          )}
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm text-primary hover:underline"
+              disabled={isLoading}
+            >
+              {isLogin ? "Não tem uma conta? Registre-se" : "Já tem uma conta? Faça login"}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default Login;
