@@ -7,14 +7,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
 
-interface Team {
-  id: number;
-  name: string;
-  student_count: number;
-  professor_count: number;
-  owner_name: string;
-  created_at: string;
-}
+// This page is temporarily disabled - the full Management page will be implemented separately
 
 const Management = () => {
   const navigate = useNavigate();
@@ -27,8 +20,7 @@ const Management = () => {
   });
 
   const filteredTeams = classes.filter(team => 
-    team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    team.owner_name.toLowerCase().includes(searchTerm.toLowerCase())
+    team.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -114,7 +106,7 @@ const Management = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-accent group-hover:scale-110 transition-transform">
-                {isLoading ? "..." : classes.reduce((acc, team) => acc + (team.student_count || 0), 0)}
+                {isLoading ? "..." : 0}
               </div>
             </CardContent>
           </Card>
@@ -173,15 +165,15 @@ const Management = () => {
                     filteredTeams.map((team) => (
                       <tr key={team.id} className="border-b border-border hover:bg-muted/30 transition-colors duration-200">
                         <td className="py-4 px-4 font-medium">{team.name}</td>
-                        <td className="py-4 px-4 text-muted-foreground">{team.owner_name}</td>
+                        <td className="py-4 px-4 text-muted-foreground">-</td>
                         <td className="py-4 px-4">
                           <span className="px-3 py-1 rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 text-primary text-sm hover:from-primary/20 hover:to-secondary/20 transition-all duration-300">
-                            {team.student_count} alunos
+                            - alunos
                           </span>
                         </td>
                         <td className="py-4 px-4">
                           <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent/10 to-primary/10 text-accent text-sm hover:from-accent/20 hover:to-primary/20 transition-all duration-300">
-                            {team.professor_count} prof.
+                            - prof.
                           </span>
                         </td>
                         <td className="py-4 px-4">

@@ -1,79 +1,158 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterData {
-  full_name: string;
+  fullName: string;
   username: string;
   email: string;
   password: string;
 }
 
 export interface AuthResponse {
-  token: string;
-  user: {
-    id: number;
-    full_name: string;
-    username: string;
-    email: string;
-  };
+  success: boolean;
+  message?: string;
+}
+
+export interface User {
+  id: number;
+  full_name: string;
+  username: string;
+  email: string;
 }
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(credentials),
     });
 
+    const data = await response.json();
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Erro ao fazer login');
+      throw new Error(data.message || 'Erro ao fazer login');
     }
 
-    const data = await response.json();
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
     return data;
   },
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${API_BASE_URL}/cadastro`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
+    const result = await response.json();
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Erro ao criar conta');
+      throw new Error(result.message || 'Erro ao criar conta');
     }
 
-    const authData = await response.json();
-    localStorage.setItem('auth_token', authData.token);
-    localStorage.setItem('auth_user', JSON.stringify(authData.user));
-    return authData;
+    return result;
   },
 
-  logout() {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+  async logout() {
+    try {
+      await fetch(`${API_BASE_URL}/logout`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   },
 
-  getToken(): string | null {
-    return localStorage.getItem('auth_token');
+  async forgotPassword(email: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao enviar email');
+    }
+
+    return data;
   },
 
-  getUser() {
-    const userStr = localStorage.getItem('auth_user');
-    return userStr ? JSON.parse(userStr) : null;
+  async resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ token, newPassword, confirmPassword }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao redefinir senha');
+    }
+
+    return data;
   },
 
-  isAuthenticated(): boolean {
-    return !!this.getToken();
-  }
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/api/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao alterar senha');
+    }
+
+    return data;
+  },
+
+  async getProfile(): Promise<User | null> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/perfil`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
+      return null;
+    }
+  },
+
+  async updateProfile(fullName: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/perfil`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ fullName }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao atualizar perfil');
+    }
+
+    return data;
+  },
 };

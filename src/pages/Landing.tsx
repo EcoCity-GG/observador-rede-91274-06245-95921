@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { CookieBanner } from "@/components/CookieBanner";
 import { useEffect, useState } from "react";
-import { useDashboardStats } from "@/hooks/useDashboardData";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { 
   Shield, 
   Eye, 
@@ -21,7 +21,8 @@ import {
 const Landing = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const { data: stats } = useDashboardStats();
+  const { data } = useDashboardData();
+  const stats = data ? { totalUsers: data.summary.length, totalAlerts: 0, aiDetections: 0 } : null;
 
   useEffect(() => {
     setIsVisible(true);

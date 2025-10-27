@@ -1,42 +1,52 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
 
-export const useDashboardStats = () => {
+export const useDashboardData = () => {
   return useQuery({
-    queryKey: ["dashboardStats"],
-    queryFn: api.getDashboardStats,
-    staleTime: 30000, // 30 segundos
-  });
-};
-
-export const useRecentAccess = (limit: number = 10) => {
-  return useQuery({
-    queryKey: ["recentAccess", limit],
-    queryFn: () => api.getRecentAccess(limit),
-    staleTime: 10000, // 10 segundos
-  });
-};
-
-export const useLogs = (filters?: { startDate?: string; endDate?: string; category?: string }) => {
-  return useQuery({
-    queryKey: ["logs", filters],
-    queryFn: () => api.getLogs(filters),
+    queryKey: ["dashboardData"],
+    queryFn: api.getDashboardData,
     staleTime: 30000,
   });
 };
 
-export const useCategoryBreakdown = () => {
+export const useClasses = () => {
   return useQuery({
-    queryKey: ["categoryBreakdown"],
-    queryFn: api.getCategoryBreakdown,
-    staleTime: 60000, // 1 minuto
+    queryKey: ["classes"],
+    queryFn: api.getClasses,
+    staleTime: 60000,
   });
 };
 
-export const useActivityByHour = () => {
+export const useAllStudents = () => {
   return useQuery({
-    queryKey: ["activityByHour"],
-    queryFn: api.getActivityByHour,
+    queryKey: ["allStudents"],
+    queryFn: api.getAllStudents,
+    staleTime: 60000,
+  });
+};
+
+export const useClassStudents = (classId: number | null) => {
+  return useQuery({
+    queryKey: ["classStudents", classId],
+    queryFn: () => classId ? api.getClassStudents(classId) : Promise.resolve([]),
+    enabled: !!classId,
+    staleTime: 30000,
+  });
+};
+
+export const useClassMembers = (classId: number | null) => {
+  return useQuery({
+    queryKey: ["classMembers", classId],
+    queryFn: () => classId ? api.getClassMembers(classId) : Promise.resolve({ members: [], isCurrentUserOwner: false }),
+    enabled: !!classId,
+    staleTime: 30000,
+  });
+};
+
+export const useProfessors = () => {
+  return useQuery({
+    queryKey: ["professors"],
+    queryFn: api.getProfessors,
     staleTime: 60000,
   });
 };

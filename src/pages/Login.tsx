@@ -15,12 +15,12 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const [loginData, setLoginData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
   const [registerData, setRegisterData] = useState({
-    full_name: "",
+    fullName: "",
     username: "",
     email: "",
     password: "",
@@ -65,7 +65,7 @@ const Login = () => {
 
     try {
       await authService.register({
-        full_name: registerData.full_name,
+        fullName: registerData.fullName,
         username: registerData.username,
         email: registerData.email,
         password: registerData.password,
@@ -114,13 +114,13 @@ const Login = () => {
           {isLogin ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Usuário ou Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="seu.usuario"
-                  value={loginData.username}
-                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                   required
                   disabled={isLoading}
                 />
@@ -155,13 +155,13 @@ const Login = () => {
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="full_name">Nome Completo</Label>
+                <Label htmlFor="fullName">Nome Completo</Label>
                 <Input
-                  id="full_name"
+                  id="fullName"
                   type="text"
                   placeholder="Seu Nome Completo"
-                  value={registerData.full_name}
-                  onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                  value={registerData.fullName}
+                  onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
                   required
                   disabled={isLoading}
                 />
