@@ -111,4 +111,23 @@ export const authenticateToken = (req: any, res: any, next: any) => {
   });
 };
 
+// Obter perfil do usuário autenticado
+router.get('/profile', authenticateToken, async (req: any, res) => {
+  try {
+    const professors = await db.query(
+      'SELECT id, full_name, username, email FROM professors WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (professors.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    res.json(professors[0]);
+  } catch (error) {
+    console.error('Erro ao buscar perfil:', error);
+    res.status(500).json({ error: 'Erro ao buscar perfil' });
+  }
+});
+
 export default router;
