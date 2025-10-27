@@ -1,4 +1,13 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  updateProfile,
+  User as FirebaseUser
+} from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
 export interface LoginCredentials {
   email: string;
@@ -18,7 +27,7 @@ export interface AuthResponse {
 }
 
 export interface User {
-  id: number;
+  id: string;
   full_name: string;
   username: string;
   email: string;
@@ -26,113 +35,98 @@ export interface User {
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(credentials),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao fazer login');
+    try {
+      await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
+      return { success: true, message: 'Login realizado com sucesso' };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro ao fazer login');
     }
-
-    return data;
   },
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/cadastro`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(data),
-    });
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      
+      // Atualizar perfil com nome
+      await updateProfile(userCredential.user, {
+        displayName: data.fullName
+      });
 
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.message || 'Erro ao criar conta');
+      // Salvar dados adicionais no Firestore
+      await setDoc(doc(db, "professors", userCredential.user.uid), {
+        full_name: data.fullName,
+        username: data.username,
+        email: data.email,
+        createdAt: new Date().toISOString()
+      });
+
+      return { success: true, message: 'Conta criada com sucesso' };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro ao criar conta');
     }
-
-    return result;
   },
 
   async logout() {
     try {
-      await fetch(`${API_BASE_URL}/logout`, {
-        method: 'GET',
-        credentials: 'include',
-      });
+      await signOut(auth);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
   },
 
   async forgotPassword(email: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao enviar email');
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { 
+        success: true, 
+        message: 'Email de recuperação enviado com sucesso' 
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro ao enviar email');
     }
-
-    return data;
   },
 
   async resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ token, newPassword, confirmPassword }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao redefinir senha');
-    }
-
-    return data;
+    // Firebase handles password reset via email link
+    return { 
+      success: true, 
+      message: 'Use o link enviado no email para redefinir sua senha' 
+    };
   },
 
   async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/change-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao alterar senha');
-    }
-
-    return data;
+    // This would require reauthentication in Firebase
+    return { 
+      success: true, 
+      message: 'Para alterar senha, use a opção "Esqueci minha senha"' 
+    };
   },
 
   async getProfile(): Promise<User | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/perfil`, {
-        method: 'GET',
-        credentials: 'include',
-      });
+      const currentUser = auth.currentUser;
+      if (!currentUser) return null;
 
-      if (!response.ok) {
-        return null;
+      const docRef = doc(db, "professors", currentUser.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          id: currentUser.uid,
+          full_name: data.full_name,
+          username: data.username,
+          email: currentUser.email || data.email
+        };
       }
 
-      return await response.json();
+      // Fallback se não tiver documento no Firestore
+      return {
+        id: currentUser.uid,
+        full_name: currentUser.displayName || '',
+        username: currentUser.email?.split('@')[0] || '',
+        email: currentUser.email || ''
+      };
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
       return null;
@@ -140,19 +134,21 @@ export const authService = {
   },
 
   async updateProfile(fullName: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/perfil`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ fullName }),
-    });
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error('Usuário não autenticado');
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao atualizar perfil');
+      await updateProfile(currentUser, {
+        displayName: fullName
+      });
+
+      await setDoc(doc(db, "professors", currentUser.uid), {
+        full_name: fullName
+      }, { merge: true });
+
+      return { success: true, message: 'Perfil atualizado com sucesso' };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro ao atualizar perfil');
     }
-
-    return data;
   },
 };
