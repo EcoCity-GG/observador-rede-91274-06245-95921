@@ -1,27 +1,81 @@
-import { Shield, Users, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { Shield, Users, Plus, Pencil, Trash2, ArrowLeft, UserPlus, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/services/api";
-
-// This page is temporarily disabled - the full Management page will be implemented separately
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, Class } from "@/services/api";
+import { CreateClassDialog } from "@/components/Management/CreateClassDialog";
+import { ManageStudentsDialog } from "@/components/Management/ManageStudentsDialog";
+import { ManageProfessorsDialog } from "@/components/Management/ManageProfessorsDialog";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Management = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [studentsDialogOpen, setStudentsDialogOpen] = useState(false);
+  const [professorsDialogOpen, setProfessorsDialogOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+  const queryClient = useQueryClient();
 
-  // Buscar turmas do banco
   const { data: classes = [], isLoading } = useQuery({
     queryKey: ["classes"],
     queryFn: api.getClasses,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (classId: number) => api.deleteClass(classId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      toast.success("Turma excluída com sucesso!");
+      setDeleteDialogOpen(false);
+      setClassToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao excluir turma: ${error.message}`);
+    },
+  });
+
   const filteredTeams = classes.filter(team => 
     team.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleManageStudents = (classData: Class) => {
+    setSelectedClass(classData);
+    setStudentsDialogOpen(true);
+  };
+
+  const handleManageProfessors = (classData: Class) => {
+    setSelectedClass(classData);
+    setProfessorsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (classData: Class) => {
+    setClassToDelete(classData);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (classToDelete) {
+      deleteMutation.mutate(classToDelete.id);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,12 +92,19 @@ const Management = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-secondary border border-primary/20 hover:scale-110 transition-transform duration-300 cursor-pointer">
-                <Shield className="w-6 h-6 text-white" />
+              <img
+                src="/LOGO.png"
+                alt="NexusCore Security Logo"
+                className="w-10 h-10 rounded-lg shadow-lg hover:scale-110 transition-transform duration-300 cursor-pointer"
+              />
+              <div>
+                <h1 className="text-xl font-bold hover:text-primary transition-colors">NexusCore Security</h1>
+                <p className="text-xs text-muted-foreground -mt-1">Gerenciamento</p>
               </div>
-              <h1 className="text-2xl font-bold hover:text-primary transition-colors">Gerenciamento de Equipes</h1>
             </div>
             <div className="flex items-center gap-4">
+              <LanguageSelector />
+              <ThemeToggle />
               <Button 
                 onClick={() => navigate("/dashboard")} 
                 variant="outline"
@@ -124,6 +185,7 @@ const Management = () => {
           </div>
           <Button 
             variant="default" 
+            onClick={() => setCreateDialogOpen(true)}
             className="gap-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 hover:scale-105 transition-all duration-300"
           >
             <Plus className="w-4 h-4" />
@@ -181,14 +243,27 @@ const Management = () => {
                             <Button 
                               variant="ghost" 
                               size="icon"
+                              onClick={() => handleManageStudents(team)}
                               className="hover:bg-primary/10 hover:text-primary transition-all duration-300"
+                              title="Gerenciar Alunos"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <UserPlus className="w-4 h-4" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="icon"
+                              onClick={() => handleManageProfessors(team)}
+                              className="hover:bg-success/10 hover:text-success transition-all duration-300"
+                              title="Gerenciar Professores"
+                            >
+                              <UsersRound className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleDeleteClick(team)}
                               className="hover:bg-destructive/10 hover:text-destructive transition-all duration-300"
+                              title="Excluir Turma"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -215,6 +290,41 @@ const Management = () => {
           </div>
         </div>
       </footer>
+
+      {/* Dialogs */}
+      <CreateClassDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <ManageStudentsDialog 
+        open={studentsDialogOpen} 
+        onOpenChange={setStudentsDialogOpen} 
+        classData={selectedClass}
+      />
+      <ManageProfessorsDialog 
+        open={professorsDialogOpen} 
+        onOpenChange={setProfessorsDialogOpen} 
+        classData={selectedClass}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Turma</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a turma <strong>{classToDelete?.name}</strong>? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

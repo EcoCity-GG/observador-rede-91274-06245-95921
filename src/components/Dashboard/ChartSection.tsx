@@ -1,15 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
-
-const data = [
-  { name: "chatgpt.com", value: 450 },
-  { name: "youtube.com", value: 320 },
-  { name: "instagram.com", value: 280 },
-  { name: "facebook.com", value: 200 },
-  { name: "twitter.com", value: 180 },
-];
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { useFilters } from "@/contexts/FilterContext";
 
 const COLORS = ["hsl(217 91% 60%)", "hsl(280 80% 55%)", "hsl(340 85% 55%)", "hsl(142 70% 45%)", "hsl(38 92% 50%)"];
 
@@ -17,13 +11,57 @@ type ChartType = "bar" | "pie" | "line" | "donut" | "polar";
 
 export const ChartSection = () => {
   const [chartType, setChartType] = useState<ChartType>("bar");
+  const { data, isLoading } = useDashboardData();
+  const { category, alertsOnly } = useFilters();
+
+  const chartData = useMemo(() => {
+    if (!data?.logs) return [];
+
+    // Filtrar logs
+    const filteredLogs = data.logs.filter((log) => {
+      const matchesCategory = category === "all" || log.categoria === category;
+      const matchesAlerts = !alertsOnly || log.categoria === "IA" || log.categoria === "Rede Social";
+      return matchesCategory && matchesAlerts;
+    });
+
+    // Agrupar por URL e somar durações
+    const urlMap = new Map<string, number>();
+    filteredLogs.forEach((log) => {
+      const current = urlMap.get(log.url) || 0;
+      urlMap.set(log.url, current + log.duration);
+    });
+
+    // Converter para array e ordenar
+    const sorted = Array.from(urlMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10); // Top 10
+
+    return sorted;
+  }, [data?.logs, category, alertsOnly]);
 
   const renderChart = () => {
+    if (isLoading) {
+      return (
+        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          Carregando dados...
+        </div>
+      );
+    }
+
+    if (chartData.length === 0) {
+      return (
+        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          Nenhum dado disponível para exibir.
+        </div>
+      );
+    }
+
     switch (chartType) {
       case "bar":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
               <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -38,7 +76,7 @@ export const ChartSection = () => {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={data}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -48,7 +86,7 @@ export const ChartSection = () => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -59,7 +97,7 @@ export const ChartSection = () => {
       case "line":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
               <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -71,7 +109,7 @@ export const ChartSection = () => {
       case "polar":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={data}>
+            <RadarChart data={chartData}>
               <PolarGrid stroke="hsl(var(--border))" />
               <PolarAngleAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
               <PolarRadiusAxis stroke="hsl(var(--muted-foreground))" />

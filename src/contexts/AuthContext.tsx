@@ -30,7 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        await refreshUser();
+        // Verifica se o email está verificado
+        if (!firebaseUser.emailVerified && firebaseUser.providerData[0]?.providerId === 'password') {
+          // Se não está verificado e não é login do Google, não permite acesso
+          setUser(null);
+        } else {
+          await refreshUser();
+        }
       } else {
         setUser(null);
       }

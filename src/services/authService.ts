@@ -3,8 +3,11 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
-  User as FirebaseUser
+  User as FirebaseUser,
+  signInWithPopup,
+  GoogleAuthProvider
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -19,6 +22,9 @@ export interface RegisterData {
   username: string;
   email: string;
   password: string;
+  cpf?: string;
+  birthDate?: string;
+  position?: string;
 }
 
 export interface AuthResponse {
@@ -52,17 +58,47 @@ export const authService = {
         displayName: data.fullName
       });
 
-      // Salvar dados adicionais no Firestore
-      await setDoc(doc(db, "professors", userCredential.user.uid), {
+      // Enviar email de verificação
+      await sendEmailVerification(userCredential.user);
+
+      // Salvar dados adicionais no Firestore (coleção leaders)
+      await setDoc(doc(db, "leaders", userCredential.user.uid), {
         full_name: data.fullName,
         username: data.username,
         email: data.email,
+        cpf: data.cpf || '',
+        birthDate: data.birthDate || '',
+        position: data.position || '',
         createdAt: new Date().toISOString()
       });
 
-      return { success: true, message: 'Conta criada com sucesso' };
+      return { success: true, message: 'Conta criada! Verifique seu email para confirmar o cadastro.' };
     } catch (error: any) {
       throw new Error(error.message || 'Erro ao criar conta');
+    }
+  },
+
+  async loginWithGoogle(): Promise<AuthResponse> {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      // Salvar dados no Firestore se for novo usuário
+      const docRef = doc(db, "leaders", result.user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        await setDoc(docRef, {
+          full_name: result.user.displayName || '',
+          username: result.user.email?.split('@')[0] || '',
+          email: result.user.email || '',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      return { success: true, message: 'Login realizado com sucesso' };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro ao fazer login com Google');
     }
   },
 
@@ -107,7 +143,7 @@ export const authService = {
       const currentUser = auth.currentUser;
       if (!currentUser) return null;
 
-      const docRef = doc(db, "professors", currentUser.uid);
+      const docRef = doc(db, "leaders", currentUser.uid);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -142,7 +178,7 @@ export const authService = {
         displayName: fullName
       });
 
-      await setDoc(doc(db, "professors", currentUser.uid), {
+      await setDoc(doc(db, "leaders", currentUser.uid), {
         full_name: fullName
       }, { merge: true });
 
