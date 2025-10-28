@@ -28,7 +28,7 @@ export const ManageStudentsDialog = ({ open, onOpenChange, classData }: ManageSt
   const { data: classStudents = [] } = useClassStudents(classData?.id || null);
 
   const addMutation = useMutation({
-    mutationFn: (studentId: number) => api.addStudentToClass(classData!.id, studentId),
+    mutationFn: (studentId: string) => api.addStudentToClass(classData!.id!, studentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classStudents", classData?.id] });
       toast.success("Aluno adicionado com sucesso!");
@@ -42,7 +42,7 @@ export const ManageStudentsDialog = ({ open, onOpenChange, classData }: ManageSt
   const createAndAddMutation = useMutation({
     mutationFn: async (data: { fullName: string; cpf?: string; pc_id?: string }) => {
       const result = await api.createStudent(data);
-      await api.addStudentToClass(classData!.id, result.student.id);
+      await api.addStudentToClass(classData!.id!, result.student.id!);
       return result;
     },
     onSuccess: () => {
@@ -59,7 +59,7 @@ export const ManageStudentsDialog = ({ open, onOpenChange, classData }: ManageSt
   });
 
   const removeMutation = useMutation({
-    mutationFn: (studentId: number) => api.removeStudentFromClass(classData!.id, studentId),
+    mutationFn: (studentId: string) => api.removeStudentFromClass(classData!.id!, studentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classStudents", classData?.id] });
       toast.success("Aluno removido com sucesso!");
@@ -71,7 +71,7 @@ export const ManageStudentsDialog = ({ open, onOpenChange, classData }: ManageSt
 
   const handleAddExisting = () => {
     if (selectedStudentId) {
-      addMutation.mutate(parseInt(selectedStudentId));
+      addMutation.mutate(selectedStudentId);
     }
   };
 
@@ -109,7 +109,7 @@ export const ManageStudentsDialog = ({ open, onOpenChange, classData }: ManageSt
                 </SelectTrigger>
                 <SelectContent>
                   {availableStudents.map((student) => (
-                    <SelectItem key={student.id} value={student.id.toString()}>
+                    <SelectItem key={student.id} value={student.id!}>
                       {student.full_name}
                     </SelectItem>
                   ))}
@@ -180,7 +180,7 @@ export const ManageStudentsDialog = ({ open, onOpenChange, classData }: ManageSt
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeMutation.mutate(student.id)}
+                        onClick={() => removeMutation.mutate(student.id!)}
                         disabled={removeMutation.isPending}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />

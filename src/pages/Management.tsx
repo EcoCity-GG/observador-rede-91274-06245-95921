@@ -40,7 +40,7 @@ const Management = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (classId: number) => api.deleteClass(classId),
+    mutationFn: (classId: string) => api.deleteClass(classId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classes"] });
       toast.success("Turma excluída com sucesso!");
@@ -72,7 +72,7 @@ const Management = () => {
   };
 
   const handleConfirmDelete = () => {
-    if (classToDelete) {
+    if (classToDelete?.id) {
       deleteMutation.mutate(classToDelete.id);
     }
   };

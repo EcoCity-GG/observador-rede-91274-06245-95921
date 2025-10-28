@@ -25,7 +25,7 @@ export const useAllStudents = () => {
   });
 };
 
-export const useClassStudents = (classId: number | null) => {
+export const useClassStudents = (classId: string | null) => {
   return useQuery({
     queryKey: ["classStudents", classId],
     queryFn: () => classId ? api.getClassStudents(classId) : Promise.resolve([]),
@@ -34,7 +34,7 @@ export const useClassStudents = (classId: number | null) => {
   });
 };
 
-export const useClassMembers = (classId: number | null) => {
+export const useClassMembers = (classId: string | null) => {
   return useQuery({
     queryKey: ["classMembers", classId],
     queryFn: () => classId ? api.getClassMembers(classId) : Promise.resolve({ members: [], isCurrentUserOwner: false }),

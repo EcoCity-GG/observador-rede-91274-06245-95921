@@ -27,7 +27,7 @@ export const ManageProfessorsDialog = ({ open, onOpenChange, classData }: Manage
   const isCurrentUserOwner = membersData?.isCurrentUserOwner || false;
 
   const shareMutation = useMutation({
-    mutationFn: (professorId: number) => api.shareClass(classData!.id, professorId),
+    mutationFn: (professorId: string) => api.shareClass(classData!.id!, professorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classMembers", classData?.id] });
       toast.success("Professor adicionado com sucesso!");
@@ -39,7 +39,7 @@ export const ManageProfessorsDialog = ({ open, onOpenChange, classData }: Manage
   });
 
   const removeMutation = useMutation({
-    mutationFn: (professorId: number) => api.removeClassMember(classData!.id, professorId),
+    mutationFn: (professorId: string) => api.removeClassMember(classData!.id!, professorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classMembers", classData?.id] });
       toast.success("Professor removido com sucesso!");
@@ -51,7 +51,7 @@ export const ManageProfessorsDialog = ({ open, onOpenChange, classData }: Manage
 
   const handleShare = () => {
     if (selectedProfessorId) {
-      shareMutation.mutate(parseInt(selectedProfessorId));
+      shareMutation.mutate(selectedProfessorId);
     }
   };
 
@@ -79,7 +79,7 @@ export const ManageProfessorsDialog = ({ open, onOpenChange, classData }: Manage
                   </SelectTrigger>
                   <SelectContent>
                     {availableProfessors.map((prof) => (
-                      <SelectItem key={prof.id} value={prof.id.toString()}>
+                      <SelectItem key={prof.id} value={prof.id}>
                         {prof.full_name} ({prof.username})
                       </SelectItem>
                     ))}
