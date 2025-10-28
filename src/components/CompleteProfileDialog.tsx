@@ -28,7 +28,6 @@ export function CompleteProfileDialog({
     username: email.split('@')[0],
     cpf: "",
     birthDate: "",
-    position: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +41,6 @@ export function CompleteProfileDialog({
         email: email,
         cpf: formData.cpf,
         birthDate: formData.birthDate,
-        position: formData.position,
         createdAt: new Date().toISOString()
       });
 
@@ -62,7 +60,7 @@ export function CompleteProfileDialog({
         <DialogHeader>
           <DialogTitle>Complete seu Perfil</DialogTitle>
           <DialogDescription>
-            Para continuar, precisamos de algumas informações adicionais.
+            Para continuar, precisamos apenas de mais alguns dados.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -94,17 +92,6 @@ export function CompleteProfileDialog({
               type="date"
               value={formData.birthDate}
               onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="position">Cargo</Label>
-            <Input
-              id="position"
-              placeholder="Ex: Gerente, Professor, etc"
-              value={formData.position}
-              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               required
               disabled={isLoading}
             />

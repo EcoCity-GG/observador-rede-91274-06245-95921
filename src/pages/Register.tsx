@@ -22,7 +22,6 @@ const Register = () => {
     confirmPassword: "",
     cpf: "",
     birthDate: "",
-    position: "",
   });
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -48,7 +47,6 @@ const Register = () => {
         password: registerData.password,
         cpf: registerData.cpf,
         birthDate: registerData.birthDate,
-        position: registerData.position,
       });
       
       toast.success("Conta criada! Verifique seu email para confirmar o cadastro.");
@@ -141,18 +139,6 @@ const Register = () => {
                 type="date"
                 value={registerData.birthDate}
                 onChange={(e) => setRegisterData({ ...registerData, birthDate: e.target.value })}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="position">Cargo</Label>
-              <Input
-                id="position"
-                type="text"
-                placeholder="Ex: Gerente, Professor, etc"
-                value={registerData.position}
-                onChange={(e) => setRegisterData({ ...registerData, position: e.target.value })}
                 required
                 disabled={isLoading}
               />

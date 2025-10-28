@@ -24,7 +24,6 @@ export interface RegisterData {
   password: string;
   cpf?: string;
   birthDate?: string;
-  position?: string;
 }
 
 export interface AuthResponse {
@@ -68,7 +67,6 @@ export const authService = {
         email: data.email,
         cpf: data.cpf || '',
         birthDate: data.birthDate || '',
-        position: data.position || '',
         createdAt: new Date().toISOString()
       });
 
