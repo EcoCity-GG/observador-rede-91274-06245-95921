@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await authService.getProfile();
       setUser(profile);
     } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
       setUser(null);
     }
   };
@@ -30,17 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Verifica se o email está verificado
+        // Para Google login, sempre permite acesso (email já verificado)
+        // Para email/senha, verifica se email foi verificado
         if (!firebaseUser.emailVerified && firebaseUser.providerData[0]?.providerId === 'password') {
-          // Se não está verificado e não é login do Google, não permite acesso
           setUser(null);
+          setIsLoading(false);
         } else {
           await refreshUser();
+          setIsLoading(false);
         }
       } else {
         setUser(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribe();

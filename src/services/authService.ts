@@ -150,22 +150,36 @@ export const authService = {
         const data = docSnap.data();
         return {
           id: currentUser.uid,
-          full_name: data.full_name,
-          username: data.username,
-          email: currentUser.email || data.email
+          full_name: data.full_name || currentUser.displayName || '',
+          username: data.username || currentUser.email?.split('@')[0] || '',
+          email: currentUser.email || data.email || ''
         };
       }
 
-      // Fallback se não tiver documento no Firestore
+      // Fallback: retorna dados básicos do Firebase Auth
       return {
         id: currentUser.uid,
         full_name: currentUser.displayName || '',
         username: currentUser.email?.split('@')[0] || '',
         email: currentUser.email || ''
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar perfil:', error);
-      return null;
+      
+      // Se for erro de permissão, retorna dados básicos do currentUser
+      if (error.code === 'permission-denied' || error.message?.includes('permissions')) {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          return {
+            id: currentUser.uid,
+            full_name: currentUser.displayName || '',
+            username: currentUser.email?.split('@')[0] || '',
+            email: currentUser.email || ''
+          };
+        }
+      }
+      
+      throw error;
     }
   },
 

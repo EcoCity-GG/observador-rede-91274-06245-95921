@@ -11,14 +11,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { CompleteProfileDialog } from "@/components/CompleteProfileDialog";
+import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
   const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [incompleteProfileData, setIncompleteProfileData] = useState<{
+    userId: string;
+    email: string;
+    fullName: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -108,10 +118,29 @@ const Login = () => {
     setIsLoading(true);
     try {
       await authService.loginWithGoogle();
-      toast({
-        title: t('login.loginSuccess'),
-        description: t('login.loginSuccessDescription'),
-      });
+      
+      // Verificar se o perfil está completo
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const docRef = doc(db, "leaders", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists() || !docSnap.data().cpf || !docSnap.data().birthDate || !docSnap.data().position) {
+          // Perfil incompleto, mostrar dialog
+          setIncompleteProfileData({
+            userId: currentUser.uid,
+            email: currentUser.email || '',
+            fullName: currentUser.displayName || ''
+          });
+          setShowCompleteProfile(true);
+          setIsLoading(false);
+        } else {
+          toast({
+            title: t('login.loginSuccess'),
+            description: t('login.loginSuccessDescription'),
+          });
+        }
+      }
     } catch (error: any) {
       toast({
         title: t('login.loginError'),
@@ -120,6 +149,16 @@ const Login = () => {
       });
       setIsLoading(false);
     }
+  };
+
+  const handleProfileComplete = async () => {
+    setShowCompleteProfile(false);
+    setIncompleteProfileData(null);
+    await refreshUser();
+    toast({
+      title: t('login.loginSuccess'),
+      description: t('login.loginSuccessDescription'),
+    });
   };
 
   return (
@@ -345,6 +384,16 @@ const Login = () => {
           </div>
         </CardContent>
       </Card>
+
+      {incompleteProfileData && (
+        <CompleteProfileDialog
+          open={showCompleteProfile}
+          userId={incompleteProfileData.userId}
+          email={incompleteProfileData.email}
+          fullName={incompleteProfileData.fullName}
+          onComplete={handleProfileComplete}
+        />
+      )}
     </div>
   );
 };
