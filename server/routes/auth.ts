@@ -6,47 +6,6 @@ import { db } from '../database';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Login
-router.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    const professors = await db.query(
-      'SELECT * FROM professors WHERE username = ? OR email = ?',
-      [username, username]
-    );
-
-    if (professors.length === 0) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const professor = professors[0];
-    const validPassword = await bcrypt.compare(password, professor.password_hash);
-
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const token = jwt.sign(
-      { id: professor.id, username: professor.username, email: professor.email },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: professor.id,
-        full_name: professor.full_name,
-        username: professor.username,
-        email: professor.email
-      }
-    });
-  } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro ao fazer login' });
-  }
-});
 
 // Registro
 router.post('/register', async (req, res) => {
